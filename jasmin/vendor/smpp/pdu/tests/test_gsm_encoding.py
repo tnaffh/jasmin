@@ -19,7 +19,6 @@ import binascii
 from jasmin.vendor.smpp.pdu.gsm_encoding import *
 from jasmin.vendor.smpp.pdu.gsm_types import *
 
-@unittest.skip('''Jasmin update: All vendor tests shall be skipped)''')
 class EncoderTest(unittest.TestCase):
     
     def do_conversion_test(self, encoder, value, hexdumpValue):
@@ -54,7 +53,7 @@ class EncoderTest(unittest.TestCase):
         decoded = None
         try:
             decoded = decodeFunc(file)
-        except Exception, e:
+        except Exception as e:
             error = e
         # print "file index: %s" % file.tell()
         self.assertEquals(len(bytes), file.tell())

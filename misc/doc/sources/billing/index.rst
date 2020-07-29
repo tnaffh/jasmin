@@ -10,7 +10,7 @@ Billing
 Billing quotas
 **************
 
-A user can be charged through 2 types of quotas (balance and/or submit_sm_count), if he reaches the limit of one of these quotas no more sending will be permitted, no matter the used channel (SMPP Server or HTTP API).
+A user can be charged through 2 types of quotas (balance and/or sms_count), if he reaches the limit of one of these quotas no more sending will be permitted, no matter the used channel (SMPP Server or HTTP API).
 
 .. _billing_type_1:
 
@@ -40,7 +40,7 @@ In all cases, Jasmin will never manage the rate *unit* (or *currency*), all it d
 Asynchronous billing
 --------------------
 
-As :ref:`will be explained later <billing_call_flow_async>`, it is important to know that whatever the used protocol, SMS is always sent **asynchronously**, this means there's always an acknowledgment to be received for every sent SMS; Jasmin provides an *optional* adapted billing :ref:`algorithm <billing_process_flow>` which is able to charge the user **asynchronously**:
+As explained :ref:`later <billing_call_flow_async>`, it is important to know that whatever the used protocol, SMS is always sent **asynchronously**, this means there's always an acknowledgment to be received for every sent SMS; Jasmin provides an *optional* adapted billing :ref:`algorithm <billing_process_flow>` which is able to charge the user **asynchronously**:
 
 #. A defined percentage of the route rate is charged when the user submits the SMS for sending.
 #. The rest is charged when the SMS is acknowledged by the next relay, in SMPP protocol, this means receiving **SUBMIT_SM_RESP** PDU, more details :ref:`here <billing_call_flow_async>`.
@@ -66,28 +66,28 @@ Using asynchronous billing can be helpful in many use cases:
 
 .. _billing_type_2:
 
-2. submit_sm_count quota
+2. sms_count quota
 ========================
 
-Simpler than *Balance* management, *submit_sm_count* is a counter to be decreased whenever the user submits the SMS for sending, let's get into these use cases for better comprehension:
+Simpler than *Balance* management, *sms_count* is a counter to be decreased whenever the user submits the SMS for sending, let's get into these use cases for better comprehension:
 
-* When sending one SMS through a route, user's *submit_sm_count* will get decreased by **1**
-* When sending five SMS through a route, user's *submit_sm_count* will get decreased by **5**
+* When sending one SMS through a route, user's *sms_count* will get decreased by **1**
+* When sending five SMS through a route, user's *sms_count* will get decreased by **5**
 
 
-.. note:: When defined, *submit_sm_count* is always decreased no matter the route is rated or not.
+.. note:: When defined, *sms_count* is always decreased no matter the route is rated or not.
 
-.. important:: New users created through :ref:`user_manager` will have unlimited submit_sm_count by default, assuming you'll apply postpaid billing (*or no billing at all*), user's *submit_sm_count* must be :ref:`defined <user_credentials>` in order to enable billing (or limit).
+.. important:: New users created through :ref:`user_manager` will have unlimited sms_count by default, assuming you'll apply postpaid billing (*or no billing at all*), user's *sms_count* must be :ref:`defined <user_credentials>` in order to enable billing (or limit).
 
 .. _billing_process_flow:
 
 Process flow
 ************
 
-The following process flow shows how billing is done through HTTP Api (The only sending API as of Jasmin v0.5.0), it is including all types of billing:
+The following process flow shows how billing is done through HTTP Api (same process is applied on SMPP Server), it is including all types of billing:
 
 * balance quota billing (:ref:`ref <billing_type_1>`) including asynchronous billing (:ref:`ref <billing_async>`)
-* submit_sm_count quota billing (:ref:`ref <billing_type_2>`)
+* sms_count quota billing (:ref:`ref <billing_type_2>`)
 
 .. figure:: /resources/billing/billing-process.png
    :alt: Billing process flow
@@ -130,7 +130,7 @@ Asynchronous billing is mainly relying on AMQP broker (like :doc:`messaging </me
 
 When receiving a **SUBMIT_SM_RESP** PDU, *submit_sm_resp_event()* method is called (:ref:`more details here <billing_async>`), it will check if there's a remaining bill to charge on user and publish it on **bill_request.submit_sm_resp.UID** (using *billing* exchange) where UID is the concerned User ID.
 
-RouterPB's *bill_request_submit_sm_resp_callback()* is listening on the same topic and it will be fired whenever it consume a new bill request, as the Router is holding User objects in memory, it will simply update their balances with the bill amount.
+RouterPB's *bill_request_submit_sm_resp_callback()* is listening on the same topic and it will be fired whenever it consumes a new bill request, as the Router is holding User objects in memory, it will simply update their balances with the bill amount.
 
 Jasmin is doing everything in-memory for performance reasons, including User charging where the balance must be persisted to disk for later synchronization whenever Jasmin is restarted, this is why RouterPB is automatically persisting Users and Groups to disk every **persistence_timer_secs** seconds as defined in jasmin.cfg file (INI format, located in /etc/jasmin).
 

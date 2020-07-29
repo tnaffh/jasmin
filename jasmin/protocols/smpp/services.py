@@ -1,9 +1,11 @@
 import logging
+from logging.handlers import TimedRotatingFileHandler
 from jasmin.protocols.smpp.factory import SMPPClientFactory
 from twisted.application import service
-from jasmin.protocols.smpp.configs import SMPPClientServiceConfig
+from .configs import SMPPClientServiceConfig
 
 LOG_CATEGORY = "jasmin-service-smpp"
+
 
 class SMPPClientService(service.Service):
     def __init__(self, SMPPClientConfig, config):
@@ -18,8 +20,11 @@ class SMPPClientService(service.Service):
         self.log = logging.getLogger(LOG_CATEGORY)
         if len(self.log.handlers) != 1:
             self.log.setLevel(self.SMPPClientServiceConfig.log_level)
-            handler = logging.FileHandler(filename=self.SMPPClientServiceConfig.log_file)
-            formatter = logging.Formatter(self.SMPPClientServiceConfig.log_format, self.SMPPClientServiceConfig.log_date_format)
+            handler = TimedRotatingFileHandler(
+                filename=self.SMPPClientServiceConfig.log_file,
+                when=self.SMPPClientServiceConfig.log_rotate)
+            formatter = logging.Formatter(self.SMPPClientServiceConfig.log_format,
+                                          self.SMPPClientServiceConfig.log_date_format)
             handler.setFormatter(formatter)
             self.log.addHandler(handler)
             self.log.propagate = False
@@ -29,7 +34,7 @@ class SMPPClientService(service.Service):
     def startService(self):
         self.startCounter += 1
         service.Service.startService(self)
-        
+
         self.log.info('Started service for [%s]', self.SMPPClientConfig.id)
         return self.SMPPClientFactory.connectAndBind().addErrback(self._startServiceErr)
 
@@ -39,7 +44,7 @@ class SMPPClientService(service.Service):
 
         self.log.info('Stopped service for [%s]', self.SMPPClientConfig.id)
         return self.SMPPClientFactory.disconnectAndDontRetryToConnect()
-    
+
     def _startServiceErr(self, reason):
         self.log.info('Service starting failed with reason: %s', reason)
         self.stopService()
